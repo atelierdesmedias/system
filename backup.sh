@@ -7,7 +7,7 @@ GOOGLE_ID=$1
 # Setting the pass phrase to encrypt the backup files.
 export PASSPHRASE=$2
 # Setting Google Drive account key
-export GOOGLE_DRIVE_ACCOUNT_KEY=/root/.adm/pydriveprivatekey.pem
+export GOOGLE_DRIVE_ACCOUNT_KEY=$(< /root/.adm/pydriveprivatekey.pem)
 
 ## Dump MySQL
 
