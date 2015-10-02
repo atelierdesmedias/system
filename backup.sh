@@ -11,13 +11,17 @@ export GOOGLE_DRIVE_ACCOUNT_KEY=$(< /root/.adm/pydriveprivatekey.pem)
 
 ## Dump MySQL
 
+echo 'mysqldump --single-transaction --routines --events --triggers --add-drop-table --extended-insert --all-databases > /var/backups/sql/mysql_databases.sql'
 mysqldump --single-transaction --routines --events --triggers --add-drop-table --extended-insert --all-databases > /var/backups/sql/mysql_databases.sql
 
 ## Duplicity
 
 # doing a monthly full backup (1W)
+echo 'duplicity --full-if-older-than 1W --include="/etc" --include="/var/lib/xwiki" --include="/var/backups/sql/mysql_databases.sql" --exclude="**" / pydrive://${GOOGLE_ID}@developer.gserviceaccount.com/backup/server'
 duplicity --full-if-older-than 1W --include="/etc" --include="/var/lib/xwiki" --include="/var/backups/sql/mysql_databases.sql" --exclude="**" / pydrive://${GOOGLE_ID}@developer.gserviceaccount.com/backup/server
+
 # cleaning the remote backup space (deleting backups older than 1 month)
+echo 'duplicity remove-older-than 1M --force pydrive://${GOOGLE_ID}@developer.gserviceaccount.com/backup/server'
 duplicity remove-older-than 1M --force pydrive://${GOOGLE_ID}@developer.gserviceaccount.com/backup/server
 
 # Unsetting the confidential variables
