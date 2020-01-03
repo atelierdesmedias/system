@@ -2,31 +2,25 @@
 # This script was created to make Duplicity backups.
 # One full backup per week then incremental.
 
-GOOGLE_ID=$1
-
-# Setting the pass phrase to encrypt the backup files.
-export PASSPHRASE=$2
-# Setting Google Drive account key
-export GOOGLE_DRIVE_ACCOUNT_KEY=$(< /root/.adm/pydriveprivatekey.pem)
+# Backup destination (/var/backups/vps/server on wifi.local)
+dest="scp://vps@local.atelier-medias.org:43/server"
 
 ## Dump MySQL
 
-echo 'mysqldump --single-transaction --routines --events --triggers --add-drop-table --extended-insert --all-databases > /var/backups/sql/mysql_databases.sql'
-mysqldump --single-transaction --routines --events --triggers --add-drop-table --extended-insert --all-databases > /var/backups/sql/mysql_databases.sql
+mysqldump --max_allowed_packet=256M --single-transaction --routines --events --triggers --add-drop-table --extended-insert --all-databases > /var/backups/sql/mysql_databases.sql
 
 ## Duplicity
 
 # doing a monthly full backup (1W)
-echo "duplicity --full-if-older-than 1W --include='/etc' --include='/var/lib/xwiki' --include='/var/backups/sql/mysql_databases.sql' --exclude='**' / pydrive://$GOOGLE_ID@developer.gserviceaccount.com/backup/server"
-duplicity --full-if-older-than 1W --include='/etc' --include='/var/lib/xwiki' --include='/var/backups/sql/mysql_databases.sql' --exclude='**' / pydrive://$GOOGLE_ID@developer.gserviceaccount.com/backup/server
+duplicity --no-encryption --full-if-older-than 1W --include='/etc' --include='/var/lib/xwiki' --include='/var/backups/sql/mysql_databases.sql' --exclude='**' / $dest
 
-# cleaning the remote backup space (deleting backups older than 1 month)
-echo "duplicity remove-older-than 1M --force pydrive://${GOOGLE_ID}@developer.gserviceaccount.com/backup/server"
-duplicity remove-older-than 1M --force pydrive://${GOOGLE_ID}@developer.gserviceaccount.com/backup/server
-
-# Unsetting the confidential variables
-unset GOOGLE_ID
-unset PASSPHRASE
-unset GOOGLE_DRIVE_ACCOUNT_KEY
+# check backup status before deleting old backups
+if [ $? -eq 0 ]; then
+        # cleaning the remote backup space (deleting backups older than 1 month)
+        duplicity remove-older-than 1M --force $dest
+else
+        echo "Backup failed"
+        exit 1
+fi
 
 exit 0
